@@ -1,35 +1,104 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.Design;
-
-namespace SergoOneTwoThree
+﻿static void Main()
 {
-    class Program
-    {
-        static void Main()
+    string input = Console.ReadLine();
+    string rpn = InfixToRPN(input);
+
+    Console.WriteLine("Выражение в обратной польской записи (ОПЗ):");
+    Console.WriteLine(rpn);
+
+    double result = CalculateRPN(rpn);
+    Console.WriteLine("Результат: " + result);
+}
+
+static string InfixToRPN(string infix)
+{
+    string[] tokens = infix.Split(' ');
+    string rpn = "";
+    Stack<string> operatorStack = new Stack<string>();
+
+    Dictionary<string, int> precedence = new Dictionary<string, int>
         {
-            string a = Console.ReadLine();
-            List<char> listnumber = new List<char>();
-            List<string> listoper = new List<string>();
-            for (int i = 0; i < a.Length; i++)
-            {
-                char ch = a[i];
-                if (char.IsDigit(ch))
-                {
-                    listnumber.Add(ch);
-                }
-                else
-                {
-                    listoper.Add(Char.ToString(ch));
-                }
-            }
+            { "+", 1 },
+            { "-", 1 },
+            { "*", 2 },
+            { "/", 2 }
+        };
 
-
-            Console.WriteLine((string.Join(" ", listnumber)).Replace(" ", ""));
-            Console.WriteLine((string.Join(" ", listoper)).Replace(" ", ""));
-            double rez = Convert.ToDouble(new System.Data.DataTable().Compute(a, ""));
-            Console.WriteLine(rez);
+    foreach (string token in tokens)
+    {
+        if (double.TryParse(token, out double number))
+        {
+            rpn += number + " ";
         }
-
+        else if (precedence.ContainsKey(token))
+        {
+            while (operatorStack.Count > 0 &&
+                   precedence.ContainsKey(operatorStack.Peek()) &&
+                   precedence[token] <= precedence[operatorStack.Peek()])
+            {
+                rpn += operatorStack.Pop() + " ";
+            }
+            operatorStack.Push(token);
+        }
+        else if (token == "(")
+        {
+            operatorStack.Push(token);
+        }
+        else if (token == ")")
+        {
+            while (operatorStack.Count > 0 && operatorStack.Peek() != "(")
+            {
+                rpn += operatorStack.Pop() + " ";
+            }
+            if (operatorStack.Count > 0 && operatorStack.Peek() == "(")
+            {
+                operatorStack.Pop();
+            }
+        }
     }
+
+    while (operatorStack.Count > 0)
+    {
+        rpn += operatorStack.Pop() + " ";
+    }
+
+    return rpn;
+}
+
+// Вычисление выражения в ОПЗ
+static double CalculateRPN(string rpn)
+{
+    string[] tokens = rpn.Split(' ');
+    Stack<double> numberStack = new Stack<double>();
+
+    foreach (string token in tokens)
+    {
+        if (double.TryParse(token, out double number))
+        {
+            numberStack.Push(number);
+        }
+        else if (numberStack.Count >= 2)
+        {
+            double operand2 = numberStack.Pop();
+            double operand1 = numberStack.Pop();
+
+            switch (token)
+            {
+                case "+":
+                    numberStack.Push(operand1 + operand2);
+                    break;
+                case "-":
+                    numberStack.Push(operand1 - operand2);
+                    break;
+                case "*":
+                    numberStack.Push(operand1 * operand2);
+                    break;
+                case "/":
+                    numberStack.Push(operand1 / operand2);
+                    break;
+            }
+        }
+    }
+
+    return numberStack.Count > 0 ? numberStack.Peek() : 0;
 }
